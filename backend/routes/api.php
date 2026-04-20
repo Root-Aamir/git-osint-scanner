@@ -10,3 +10,4 @@ use App\Http\Controllers\RepositoryController;
 
 Route::post('/repos', [RepositoryController::class, 'store']);
 Route::get('/repos/{id}/logs', [RepositoryController::class, 'getLogs']);
+Route::get('/repos/{id}/scan', [RepositoryController::class, 'scanSecrets']);

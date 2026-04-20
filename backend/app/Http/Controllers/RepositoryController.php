@@ -59,4 +59,39 @@ class RepositoryController extends Controller
 
         return response()->json(['repo' => $repo->name, 'commits' => $commits]);
     }
+// 3. Code ke andar Secrets (Passwords/API Keys) scan karne ka function
+    public function scanSecrets($id)
+    {
+        $repo = Repository::find($id);
+
+        if (!$repo) {
+            return response()->json(['error' => 'Repository not found'], 404);
+        }
+
+        // Yeh keywords hum code ki history mein dhoondhenge
+        $regex = "password|api_key|secret|token|DB_PASSWORD";
+        
+        // Git -G command code ke andar jaakar in words ko search karti hai
+        $command = 'cd ' . escapeshellarg($repo->path) . ' && git log -G "' . $regex . '" -i --pretty=format:"%H|%an|%s" --name-only';
+        
+        $output = shell_exec($command);
+
+        // Agar output khali hai, matlab repo safe hai
+        if (trim($output) === "") {
+            return response()->json([
+                'status' => 'Safe', 
+                'message' => 'No leaked secrets found! 🛡️',
+                'leaks' => []
+            ]);
+        }
+
+        // Agar kuch mila, toh use JSON mein bhejenge (abhi ke liye raw text bhej rahe hain)
+        $lines = explode("\n", trim($output));
+        
+        return response()->json([
+            'status' => 'Vulnerable',
+            'message' => 'Warning: Sensitive data detected in commits! 🚨',
+            'raw_evidence' => $lines
+        ]);
+    }
 }
